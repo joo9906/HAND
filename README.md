@@ -1,28 +1,16 @@
-# HAND
-SSAFY 자율 프로젝트 : 감정 완화 서비스의 AI 서버입니다.
-
-## 감정 분석 모델
-모델은 허깅페이스에 업로드 되어 있습니다.
-사용 방법도 함께 기재하였습니다.
-
-혹은 아래의 주소에서 safetensor 파일만 다운로드 후 FastAPI/Classifier_Model 폴더에  업로드 하면 사용 가능합니다.
-
-모델 URL : https://huggingface.co/noridorimari/emotion_classifier
-
-
 # 핵심 기능 정리
 
 ## 1. 📘 감정 분석 (Emotion Classification)
 
-사용자가 작성한 하루 다이어리 텍스트를 기반으로 감정 점수와 6가지 감정 확률을 분석합니다.
+- 사용자가 작성한 하루 다이어리 텍스트를 기반으로 감정 점수와 6가지 감정 확률을 분석합니다.
 
-모델: KcELECTRA 기반 커스텀 감정 분류 모델
+- 모델: KcELECTRA 기반 커스텀 감정 분류 모델
 
-감정 라벨: 기쁨 / 당황 / 분노 / 불안 / 상처 / 슬픔
+- 감정 라벨: 기쁨 / 당황 / 분노 / 불안 / 상처 / 슬픔
 
-감정별 확률을 계산 후 가중치를 적용하여 0~100 감정 점수 산출
+- 감정별 확률을 계산 후 가중치를 적용하여 0~100 감정 점수 산출
 
-전처리: URL 제거, 이모지 제거, 텍스트 정규화 등
+- 전처리: URL 제거, 이모지 제거, 텍스트 정규화 등
 
 ## 2. ✏️ AI 기반 텍스트 요약
 
@@ -30,29 +18,27 @@ SSAFY 자율 프로젝트 : 감정 완화 서비스의 AI 서버입니다.
 
 ✔️ 짧은 요약 (20글자 내, ~한 날로 끝남)
 
-사용자에게 직접 보여주는 요약
+- 사용자에게 직접 보여주는 요약
 
-사건 중심으로 감정 톤을 극도로 압축
-
-예: “발을 밟혀 기분이 나쁜 날”
+- 사건 중심으로 감정 톤을 극도로 압축
 
 ✔️ 긴 요약 (길이 제한 없음)
 
-내부 분석용 요약
+- 내부 분석용 요약
 
-사건/감정/맥락을 모두 담은 상세 요약
+- 사건/감정/맥락을 모두 담은 상세 요약
 
-보고서 생성과 조언 생성을 위한 기반 데이터로 사용
+- 보고서 생성과 조언 생성을 위한 기반 데이터로 사용
 
 ## 3. 🩺 주간 심리·생체 보고서 생성 (Weekly Psychological/Bio Report)
 
 다음 데이터를 종합해 전문가 스타일의 주간 분석 리포트를 생성합니다.
 
-입력: 다이어리 요약들(long/short), 감정 점수 변화, Galaxy Watch 기반 생체 데이터(baseline, anomalies), 사용자 정보(age, gender, job 등)
+- 입력: 다이어리 요약들(long/short), 감정 점수 변화, Galaxy Watch 기반 생체 데이터(baseline, anomalies), 사용자 정보(age, gender, job 등)
 
-출력: 감정 패턴 분석, 생체 스트레스 지표 해석, 감정–생체 반응 상관성 분석, 개인 특성 기반 코멘트, 주의 필요한 부분 / 회복 신호
+- 출력: 감정 패턴 분석, 생체 스트레스 지표 해석, 감정–생체 반응 상관성 분석, 개인 특성 기반 코멘트, 주의 필요한 부분 / 회복 신호
 
-항목별 글자 수 조건을 맞춘 정제된 보고서
+- 항목별 글자 수 조건을 맞춘 정제된 보고서
 
 ## 4. 💬 조언 생성 (Advice Generation)
 
@@ -60,108 +46,91 @@ SSAFY 자율 프로젝트 : 감정 완화 서비스의 AI 서버입니다.
 
 ✔️ 일간 조언 (daily_advice)
 
-오늘의 다이어리 내용을 기반으로 2줄 내외 조언 생성
+- 오늘의 다이어리 내용을 기반으로 2줄 내외 조언 생성
 
 ✔️ 개인용 주간 조언 (private_advice)
 
-주간 보고서 + 유사 상담 기록을 기반으로 조언
+- 주간 보고서 + 유사 상담 기록을 기반으로 조언
 
 ✔️ 관리자용 주간 조언 (manager_advice)
 
-팀원의 상태 보고서 기반으로 관리자만 할 수 있는 톤의 조언을 추천
+- 팀원의 상태 보고서 기반으로 관리자만 할 수 있는 톤의 조언을 추천
 
 ## 5. 🔍 RAG 기반 유사 상담 사례 검색
 
 Weaviate 벡터 DB를 활용하여 과거 상담 기록에서 유사한 상황을 탐색합니다.
 
-Hybrid Search (BM25 + Vector)
+- Hybrid Search (BM25 + Vector)
 
-입력:
+- 입력: 감정 요약 및 사용자 정보(나이, 직업, 질병력 등), 일일 다이어리 요약 합본
 
-감정 요약 및 사용자 정보(나이, 직업, 질병력 등)
-
-단일 상담/멀티턴 상담 모두 검색
-
-조언 생성 시 참고 자료로 활용
+- 단일 상담/멀티턴 상담 모두 검색 >> 조언 생성 시 참고 자료로 활용
 
 ## 6. 🧠 벡터 임베딩 시스템
 
-GMS Embedding API 사용
+GMS Embedding API 사용 (gpt-3-embedding)
 
-텍스트 → 벡터 변환
+- 텍스트 → 벡터 변환
 
-조언/요약/리포트 등 모든 텍스트를 vector로 저장해 RAG 활용
+- 조언/요약/리포트 등 모든 텍스트를 vector로 저장해 RAG 활용
 
 ## 7. 🗄️ Weaviate 벡터 DB 연동
 
 다음 목적의 벡터를 저장/조회합니다.
 
-조언 데이터 저장 (SingleCounsel, MultiCounsel)
+- 조언 데이터 저장 (SingleCounsel, MultiCounsel)
 
-저장 조건:
-
-조언이 8번의 평가 기준 점수 0.7 이상일 때만 저장
+- 저장 조건: 생성된 조언이 8 종류의 평가 기준 점수 평균 0.7 이상일 때만 저장
 
 ## 8. 📊 조언 품질 평가 시스템 (RAGAS-like + ARES)
 
 조언의 품질을 자동으로 평가하여 0~1 스코어로 측정합니다.
 
-포함된 평가 지표:
+- 포함된 평가 지표:
 
-Answer Relevancy (답변 관련성)
+    Answer Relevancy (답변 관련성)
 
-Faithfulness (왜곡 없음)
+    Faithfulness (왜곡 없음)
 
-Context Relevancy (문맥 적합도)
+    Context Relevancy (문맥 적합도)
 
-Empathy (공감도)
+    Empathy (공감도)
 
-Safety (안전성)
+    Safety (안전성)
 
-Actionability (실행 가능성)
+    Actionability (실행 가능성)
 
-ARES 7개 항목 (helpfulness, coherence, groundedness, safety 등)
+- ARES 7개 항목 (helpfulness, coherence, groundedness, safety 등)
 
-모든 평가는 GMS 모델로 수행하고 MLflow에 자동 기록됩니다.
+- 모든 평가는 GMS 모델로 수행하고 MLflow에 자동 기록됩니다.
 
 ## 9. 📑 MLflow 자동 기록 (MLOps)
 
-모든 조언 평가 metric을 MLflow에 기록
+- 모든 조언 평가 metric을 MLflow에 기록
 
-실험 관리 / 모델 품질 추적
+- 실험 관리 / 모델 품질 추적
 
-mlruns 디렉토리 자동 관리
+- mlruns 디렉토리 자동 관리
 
-## 10. 🚀 FastAPI 기반 API 서버 구조
 
-주요 엔드포인트:
-
-| 기능               | 엔드포인트                 | 설명                                      |
-|-------------------|---------------------------|-------------------------------------------|
-| 서버 상태 확인     | `/ai-server/health`       | 서버 헬스 체크                            |
-| 감정 분석 + 요약  | `/diary/summary`          | 하루 감정 분석 + 요약 + 일간 조언        |
-| 관리자 조언        | `/manager/advice`         | 보고서 + RAG + 평가 기반 최종 조언       |
-| 개인 조언         | `/individual-users/report`| 개인용 보고서 + 조언 제공                |
-
-## 폴더 구성
+# AI 폴더 구성
 ```
-── ai/                                # FastAPI 백엔드 전체
-│   ├── FastAPI/
-│   │   ├── app/
-│   │   │   ├── api/
-│   │   │   │   ├── route.py           # 엔드포인트 라우팅
-│   │   │   │   └── weav.py            # weaviate 연결 모듈
-│   │   │   ├── core/
-│   │   │   │   └── vector_embedding.py # GPT embedding 3 + GMS 요청 모듈
-│   │   │   ├── models/
-│   │   │   │   └── schemas.py         # Pydantic 스키마
-│   │   │   └── services/
-│   │   │       ├── advice.py          # 관리자 조언 생성
-│   │   │       ├── emotion_classify.py# 감정 분석
-│   │   │       ├── report.py          # 주간 보고서 생성
-│   │   │       └── summary.py         # 요약 기능 모듈
-│   │   └── __init__.py
-│   │
+├── FastAPI/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── route.py           # 엔드포인트 라우팅
+│   │   │   └── weav.py            # weaviate 연결 모듈
+│   │   ├── core/
+│   │   │   └── vector_embedding.py # GPT embedding 3 + GMS 요청 모듈
+│   │   ├── models/
+│   │   │   └── schemas.py         # Pydantic 스키마
+│   │   └── services/
+│   │       ├── advice.py          # 관리자 조언 생성
+│   │       ├── emotion_classify.py# 감정 분석
+│   │       ├── report.py          # 주간 보고서 생성
+│   │       └── summary.py         # 요약 기능 모듈
+│   └── __init__.py
+│
 ├── Classifier_Model/                 # 감정 분류 모델(KcELECTRA) 관련 파일들
 │   ├── config.json
 │   ├── model.safetensors             # 감정 분석을 위한 핵심 파라미터 파일
@@ -187,8 +156,6 @@ mlruns 디렉토리 자동 관리
 │   └── total_kor_multiturn_counsel_bot.jsonl
 │
 ├── mlflow.db                          # MLflow 로컬 DB
-├── .env                               # 환경 변수(gms key, url 등)
 ├── README.md
 └── requirements.txt
 ```
-
