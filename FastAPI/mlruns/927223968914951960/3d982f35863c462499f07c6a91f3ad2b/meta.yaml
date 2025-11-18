@@ -1,0 +1,15 @@
+artifact_uri: file:C:\Users\SSAFY\Desktop\WANG\S13P31A106\ai\FastAPI\mlruns/927223968914951960/3d982f35863c462499f07c6a91f3ad2b/artifacts
+end_time: 1763109970369
+entry_point_name: ''
+experiment_id: '927223968914951960'
+lifecycle_stage: active
+run_id: 3d982f35863c462499f07c6a91f3ad2b
+run_name: languid-mink-335
+run_uuid: 3d982f35863c462499f07c6a91f3ad2b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763109964791
+status: 3
+tags: []
+user_id: SSAFY

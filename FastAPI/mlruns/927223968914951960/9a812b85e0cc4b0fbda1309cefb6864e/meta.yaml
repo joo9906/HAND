@@ -1,0 +1,15 @@
+artifact_uri: file:C:\Users\SSAFY\Desktop\WANG\S13P31A106\ai\FastAPI\mlruns/927223968914951960/9a812b85e0cc4b0fbda1309cefb6864e/artifacts
+end_time: 1763108957605
+entry_point_name: ''
+experiment_id: '927223968914951960'
+lifecycle_stage: active
+run_id: 9a812b85e0cc4b0fbda1309cefb6864e
+run_name: stylish-squirrel-379
+run_uuid: 9a812b85e0cc4b0fbda1309cefb6864e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763108957533
+status: 3
+tags: []
+user_id: SSAFY

@@ -1,0 +1,15 @@
+artifact_uri: file:C:\Users\SSAFY\Desktop\WANG\S13P31A106\ai\FastAPI\mlruns/927223968914951960/bf450d09c3f34975877d58b9bb6592fd/artifacts
+end_time: 1763109716745
+entry_point_name: ''
+experiment_id: '927223968914951960'
+lifecycle_stage: active
+run_id: bf450d09c3f34975877d58b9bb6592fd
+run_name: gaudy-conch-966
+run_uuid: bf450d09c3f34975877d58b9bb6592fd
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763109711609
+status: 3
+tags: []
+user_id: SSAFY

@@ -1,0 +1,15 @@
+artifact_uri: file:C:\Users\SSAFY\Desktop\WANG\S13P31A106\ai\FastAPI\mlruns/927223968914951960/8bae90b84c9343588b93c91d51cfd9da/artifacts
+end_time: 1763109571938
+entry_point_name: ''
+experiment_id: '927223968914951960'
+lifecycle_stage: active
+run_id: 8bae90b84c9343588b93c91d51cfd9da
+run_name: capricious-pig-421
+run_uuid: 8bae90b84c9343588b93c91d51cfd9da
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763109566464
+status: 3
+tags: []
+user_id: SSAFY

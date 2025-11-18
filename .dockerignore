@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+Pretraining/
+Quantization/
+
+# Database files
+*.db
+*.sqlite
+mlflow.db
+
+# Test files
+test.py
+test.ipynb
+
+# Vector DB settings (서버에서 별도 실행)
+vector_db_settings/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env.local
+.env.*.local
+
+# Data files
+*.jsonl
+*.json
+*.csv
+
+# Logs
+*.log
