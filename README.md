@@ -1,3 +1,18 @@
+# 프로젝트 개요
+### 감정 완화 프로젝트 — AI 심리·생체 데이터 분석 시스템
+
+HAND Project – Emotion & Stress Early Detection AI Server
+
+이 프로젝트는 사용자의 감정 일기, 생체 데이터(HRV·심박·체온 등), 이상 징후 분석, 그리고 유사 상담 사례 기반 RAG 조언 생성을 통합한 정서 안정 AI 분석 서버이다.
+개인 사용자와 관리자(팀장·조직) 모두를 위한 맞춤형 심리 보고서 + 안전한 AI 조언을 생성하고, 생성된 조언의 품질을 자동 평가하여 고품질 조언만 VectorDB(Weaviate)에 축적한다.
+
+### 실제 사용 영상
+
+<div style="display: flex; justify-content: center; gap: 40px;">
+  <img src="./example/다이어리%20작성.gif" width="30%"; margin-right="50px">
+  <img src="./example/관리자%20기능.gif" width="30%"; margin-right = "50px">
+</div> 
+
 # 핵심 기능 정리
 
 ## 1. 📘 감정 분석 (Emotion Classification)
