@@ -1,10 +1,15 @@
+<<<<<<< HEAD
+=======
 from model_loader import model, tokenizer
+>>>>>>> 1c0419e150ea1f5bf9bf98ccbd8708b2bc14ae22
 from transformers import pipeline
 import torch
 import re
 import emoji
 from soynlp.normalizer import repeat_normalize
-
+from model_loader import session, tokenizer
+import numpy as np
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 emojis = ''.join(emoji.EMOJI_DATA.keys())
 pattern = re.compile(f'[^ .,?!/@$%~％·∼()\x00-\x7Fㄱ-ㅣ가-힣{emojis}]+')
@@ -20,7 +25,6 @@ def clean(x):
     x = repeat_normalize(x, num_repeats=2)
     return x
 
-
 # 감정 라벨 매핑
 id2label = {
     0: "기쁨",       # happy
@@ -32,18 +36,28 @@ id2label = {
 }
 label2id = {v: k for k, v in id2label.items()}
 
-# id2label 정보를 config에 반영
-model.config.id2label = id2label
-model.config.label2id = label2id
 
-# 파이프라인 정의
-classifier = pipeline(
-    "text-classification",
-    model=model,
-    tokenizer=tokenizer,
-    return_all_scores=True,
-    device=0 if torch.cuda.is_available() else -1
-)
+# onnx로 바꾸면서 softmax가 풀렸으므로 다시 numpy를 사용해 만들어줌
+def softmax(x):
+    x = np.array(x)
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=-1, keepdims=True)
+
+def predict(text: str):
+    text = clean(text)
+
+    inputs = tokenizer(text, return_tensors="np")
+
+    ort_inputs = {
+        "input_ids": inputs["input_ids"],
+        "attention_mask": inputs["attention_mask"]
+    }
+
+    logits = session.run(["logits"], ort_inputs)[0]  # (1, 6)
+    probs = softmax(logits)[0]  # shape: (6,)
+
+    result = {id2label[i]: float(probs[i]) for i in range(6)}
+    return result
 
 # 감정별 가중치 (심리 영향 기반)
 emotion_weights = {
@@ -55,40 +69,41 @@ emotion_weights = {
     "슬픔": -1.7
 }
 
+# 들어온 텍스트를 onnx 변환 된 감정 분류 모델로 판정 내림.
 def emotionClassifying(texts: list[str]) -> dict:
     try:
-        # 감정 평균 확률 계산
         all_scores = {label: 0.0 for label in id2label.values()}
 
         for text in texts:
-            preds = classifier(clean(text))[0]
+            preds = predict(clean(text))  # ← dict 형태
 
-            for p in preds:
-                all_scores[p["label"]] += p["score"]
+            # preds = {"분노":0.12, "슬픔":0.22 ...} 형태
+            for label, score in preds.items():
+                all_scores[label] += score
 
+        # 전체 평균
         for k in all_scores:
             all_scores[k] /= len(texts)
 
-        weighted_sum = sum(all_scores[e] * emotion_weights[e] for e in all_scores)
+        # 가중치 반영
+        weighted_sum = sum(
+            all_scores[e] * emotion_weights[e] for e in all_scores
+        )
 
-        # 기본점수 + 감정 편차
         base_score = 70
-        scale = 20    # 민감도 조정
-
+        scale = 30
         final_score = base_score + (weighted_sum * scale)
 
-        # 0~100 범위 제한
+        # 0~100 constrain
         final_score = max(0, min(100, final_score))
         final_score = round(final_score, 3)
 
         return {
-            "sentiment": {k: round(v, 4) for k, v in all_scores.items()},
-            "score": final_score,      
-            "type": "emotion_score"
+            "sentiment": {k: round(v, 5) for k, v in all_scores.items()},
+            "score": final_score,
+            "type": "emotion_score",
         }
 
     except Exception as e:
-        print(f'"error": "감정 분석 중 오류 : {str(e)}')
-        print(texts)
-
+        print(f'"error": 감정 분석 중 오류 : {str(e)}')
         return { "sentiment": {}, "score": 60, "type": "error" }

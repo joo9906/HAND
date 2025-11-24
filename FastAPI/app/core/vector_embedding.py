@@ -35,7 +35,7 @@ def embed(text: str) -> list[float]:
 
         if not isinstance(embedding, list):
             raise ValueError("embedding이 list 형태가 아닙니다.")
-
+        
         return [float(v) for v in embedding]
 
     except Exception as e:

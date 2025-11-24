@@ -44,6 +44,13 @@ class UserInfo(BaseModel):
     height: float
     weight: float
     disease: str
+    
+class BM25User(BaseModel):
+    age: int
+    gender: str
+    job: str
+    disease: str
+    family: str
 
 class BM25User(BaseModel):
     age: int
@@ -78,7 +85,7 @@ class PersonalAdviceOutput(BaseModel):
     user_id : int
     report : str
     advice : str
-
+    
 # 관리자 상담 전용
 class ManageAdviceInput(BaseModel):
     user_id: int

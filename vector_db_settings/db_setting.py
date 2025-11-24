@@ -25,7 +25,7 @@ client = weaviate.connect_to_custom(
     grpc_port=WEAVIATE_GRPC_PORT,
     http_secure=False,
     grpc_secure=False,
-)
+    )
 
 # Class 생성 및 필드 설정
 existing = client.collections.list_all()
@@ -62,13 +62,11 @@ else:
 def load_jsonl(path):
     with open(path, "r", encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
-
 class Embedding():
     def __init__(self):
         self.api_key = API_KEY
         self.emb_model = EMB_MODEL
         self.emb_url = EMB_URL
-
     # 임베딩
     def embed(self, text: str) -> list:
         headers = {
@@ -123,18 +121,15 @@ for idx, d in enumerate(single_data):
     try:
         # 1. 임베딩 생성 (에러 처리 포함)
         vector_embedding = emb.validated_embed(d["input"])
-
         # 2. 벡터 검증
         if not vector_embedding or len(vector_embedding) == 0:
             print(f"❌ Row {idx}: 벡터가 비어있습니다")
             continue
-
         # 3. 데이터 객체 생성
         data_object = {
             "input": d["input"].strip(),
             "output": d["output"].strip()
         }
-
         # 4. Insert 및 반환값 확인
         uuid = single_collection.data.insert(
             properties=data_object,
@@ -155,7 +150,6 @@ for idx, d in enumerate(multi_data):
     try:
         patient = ""
         counselor = ""
-
         for t in d:
             if t['speaker'] == "내담자":
                 patient += t['utterance']
@@ -169,13 +163,11 @@ for idx, d in enumerate(multi_data):
         if not vector_embedding or len(vector_embedding) == 0:
             print(f"❌ Row {idx}: 벡터가 비어있습니다")
             continue
-
         # 3. 데이터 객체 생성
         data_object = {
             "patient": patient.strip(),
             "counselor" : counselor.strip()
         }
-
         # 계속 안돼서 DataObject를 사용하여 삽입 시도.
         obj = multi_collection.data.insert(
             properties=data_object,

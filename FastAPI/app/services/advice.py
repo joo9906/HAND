@@ -2,6 +2,8 @@ import os
 import time
 import weaviate
 import httpx
+import json
+import re
 from fastapi import HTTPException
 from dotenv import load_dotenv
 from app.core.vector_embedding import embed
@@ -47,8 +49,152 @@ def connect_weaviate_with_retry(max_retries=5, delay=2):
 
 client = connect_weaviate_with_retry()
 
+# json 아닌거 터지는 경우 방지
+def safe_load_json(text: str):
+    """
+    LLM 출력에서 JSON 부분만 안전하게 추출해서 Python dict로 변환.
+    - ```json ... ``` 제거
+    - 설명/문장 제거
+    - {} 또는 [] 패턴을 모두 탐지
+    - 실패 시 에러 메시지 출력
+
+    Returns:
+        dict or list
+    """
+    try:
+        # 1) 코드블록 제거
+        text = text.strip()
+        text = re.sub(r"```json", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"```", "", text)
+
+        # 2) JSON 객체 또는 리스트 추출
+        pattern = r"(\{[\s\S]*\}|\[[\s\S]*\])"     # { ... } 또는 [ ... ] 둘 다 탐색
+        match = re.search(pattern, text)
+
+        if match:
+            json_str = match.group(1)
+            return json.loads(json_str)
+
+        # 3) 못 찾으면 그대로 파싱 시도
+        return json.loads(text)
+
+    except Exception as e:
+        print("❌ JSON 파싱 실패:", e)
+        print("원본 텍스트:\n", text)
+        raise e
+    
+# rerank를 더 잘 이해하게 하기 위해
+def list_to_bullet(items: list):
+    if not items:
+        return "- 없음"
+    return "\n".join([f"- {str(i).strip()}" for i in items])
+
+async def rerank(summary: str, single_retrieval: list, multi_retrieval:list):
+    prompt = f"""
+        당신은 감정 상담 및 정신건강 조언에 특화된 전문가 시스템입니다. 
+        아래는 사용자의 현재 심리 상태를 요약한 내용입니다:
+
+        [사용자 요약]
+        {summary}
+
+        아래는 RAG 시스템이 벡터 기반으로 검색한 상담 기록 후보들입니다.  
+        이제 이 후보들을 기반으로 **사용자에게 가장 적합한 조언 근거 데이터**만 걸러내고 재정렬해야 합니다.
+
+        [싱글턴 상담 데이터]
+        {list_to_bullet(single_retrieval)}
+
+        [멀티턴 상담 데이터]
+        {list_to_bullet(multi_retrieval)}
+
+        ---  
+        Rerank 목표
+
+        당신의 역할은 아래 기준을 바탕으로 **싱글턴+멀티턴 상담 데이터를 통합하여**  
+        사용자에게 도움이 될 가능성이 높은 순서대로 재랭킹하는 것입니다.
+
+        ### 평가 기준
+        1. **내용 관련성(Relevance)**  
+        - 요약된 사용자 감정 상태와 얼마나 직접적으로 연결되는가?
+
+        2. **문제 구조 유사성(Situation Similarity)**  
+        - 상황(관계, 스트레스 요인, 감정 패턴)이 얼마나 닮았는가?
+
+        3. **감정적 유사성(Emotional Matching)**  
+        - 감정적 맥락(불안/분노/슬픔/상처 등)이 일치하는가?
+
+        4. **조언 가능성(Helpfulness Potential)**  
+        - 해당 상담사례가 실제로 조언 생성에 도움이 될 수 있는가?
+
+        5. **중복 제거(Deduplication)**  
+        - 의미가 겹치거나 비슷한 사례는 묶어서 점수는 낮게.
+
+        ---
+
+        ## 출력 형식 (JSON)
+        아래 형식을 반드시 지켜주세요:
+        
+        {
+        "ranked_items": [
+            {
+            "type": "single" | "multi",
+            "content": "원문 상담 내용"
+            }
+        ],
+        "top_k_final": [
+            "상위 3개의 상담 내용만 원문 그대로"
+        ]
+        }
+
+        주의:  
+        - score는 0~1 실수  
+        - 최대 3개(top_k=3)를 최종 리턴  
+        - 사용자의 심리와 무관한 데이터는 score를 낮게 책정
+
+        ---
+
+        ## 🎯 최종 작업
+        주어진 데이터 중 **가장 관련성 높은 상담 사례 3개만** 선별하여  
+        JSON 형식으로 rerank 결과를 출력하세요.
+        """
+    
+    headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {GMS_KEY}",
+    }
+    
+    messages = [
+        {
+            "role": "system",
+            "content": "당신은 vector_db에서 추출한 내용을 rerank 하는 평가자입니다.",
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
+
+    payload = {
+        "model": "gpt-4.1-nano",
+        "messages": messages,
+        "max_tokens": 3000,
+        "temperature": 0.3,
+    }
+
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=30.0) as cli:
+            response = await cli.post(ADVICE_URL, headers=headers, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+        advice = result["choices"][0]["message"]["content"].strip()
+        
+        return advice
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"GMS 요청 중 오류 발생: {e}")
+
 # 유사 상담내용 검색
-async def retrieve_similar_cases(query: str, info: dict, top_k: int = 2):
+async def retrieve_similar_cases(query: str, info: dict, top_k: int = 5):
     try:
         prompt = f"""
         {query}
@@ -96,15 +242,21 @@ async def retrieve_similar_cases(query: str, info: dict, top_k: int = 2):
         print(f"❌ 상담 검색 중 오류: {e}")
         return [], []
 
-    finally:
-        client.close()
-
 # 관리자 조언 생성 함수
 async def manager_advice(report: str, summary: str, info: dict):
     single, multi = await retrieve_similar_cases(summary, info)
-    
-    single_text = "\n".join([f"- {s}" for s in single])
-    multi_text = "\n".join([f"- {m}" for m in multi])
+
+    # 리랭크 실행
+    rerank_result = await rerank(summary, single, multi)
+    rerank_data = safe_load_json(rerank_result)
+
+    top3 = rerank_data.get("top_k_final", [])
+    if not top3:
+        reranked_text = "\n".join(single) if single else "유사 상담 데이터를 찾지 못했습니다."
+    else:
+        # 리랭크 된 애들을 합쳐서 하나의 텍스트로 변환
+        top3 = rerank_data["top_k_final"]
+        reranked_text = "\n".join(top3)
     
     prompt = f"""
         당신은 팀장으로서 팀원의 상태를 보고 조언을 제시하는 역할입니다.
@@ -119,18 +271,13 @@ async def manager_advice(report: str, summary: str, info: dict):
         {report}
 
         [팀원의 상태와 유사한 사람과의 상담 사례]
-        단일 상담사의 답변 : 
-        {single_text}
+        {reranked_text}
         
-        멀티턴 상담사의 답변 : 
-        {multi_text}
-        
-        답변 생성 시 두가지 상담의 예시를 모두 참고하세요. 만약 유사 상담이 없을 경우 알아서 조언을 생성해주세요.
+        답변 생성 시 유사한 상담의 예시를 모두 참고하세요. 만약 유사 상담이 없을 경우 알아서 조언을 생성해주세요.
         아래의 형식을 참고하여 비슷한 형태로 생성하되, 아래의 형식의 내용은 참고하지 마세요.
         제안은 최대 3개까지만 제공해주세요.
         상태 요약을 짧고 간략하게 핵심만 뽑아주세요.
 
-        
         상태 요약 : 요즘 화재 출동이 많아지면서 스트레스가 누적되고, 수면 부족까지 겹쳐 많이 힘드실 것 같습니다. 누구라도 이런 상황이 지속되면 집중력이 떨어질 수밖에 없습니다.
         현재 본인의 상태를 스스로 인지하고 계신 것은 정말 중요한 부분이라고 생각합니다. 업무 특성상 긴장 상태가 길게 이어지면 몸과 마음 모두 지치기 쉽기  때문에, 작은 변화라도 시도해보는 것이 필요합니다.
 
@@ -188,8 +335,18 @@ async def manager_advice(report: str, summary: str, info: dict):
 # 개인용 조언 생성 함수
 async def private_advice(report: str, summary: str, info: dict):
     single, multi = await retrieve_similar_cases(summary, info=info)
-    single_text = "\n".join([f"- {s}" for s in single]) if single else "유사 단일 상담 없음"
-    multi_text = "\n".join([f"- {m}" for m in multi]) if multi else "유사 멀티 상담 없음"
+
+    # 리랭크 실행
+    rerank_result = await rerank(summary, single, multi)
+    rerank_data = safe_load_json(rerank_result)
+
+    top3 = rerank_data.get("top_k_final", [])
+    if not top3:
+        reranked_text = "\n".join(single) if single else "유사 상담 데이터를 찾지 못했습니다."
+    else:
+        # 리랭크 된 애들을 합쳐서 하나의 텍스트로 변환
+        top3 = rerank_data["top_k_final"]
+        reranked_text = "\n".join(top3)
     
     prompt = f"""
         당신은 정서적으로 불안정할 수 있는 사람에게 작은 조언을 주는 역할입니다.
@@ -203,18 +360,12 @@ async def private_advice(report: str, summary: str, info: dict):
         {report}
 
         [사용자의 상태와 유사한 사람과의 상담 사례]
+        {reranked_text}
         
-        단일 상담사의 답변 : 
-        {single_text}
-        
-        멀티턴 상담사의 답변 : 
-        {multi_text}
-        
-        답변 생성 시 두가지 종류의 상담 사례를 모두 참고하세요.
+        답변 생성 시 위의 실제 상담 사례를 모두 참고하세요.
         아래의 형식을 참고하여 비슷한 형태로 생성하되, 아래의 형식의 내용은 참고하지 마세요.
         제안은 최대 3개까지만 짧게 제공해주세요.
 
-        
         제안:
         1. 짧은 휴식이라도 챙기기
         바쁜 와중에도 잠깐이라도 눈을 감고 숨을 고르거나, 스트레칭을 해보시길 권합니다. 짧은 시간이더라도 반복적으로 휴식을 취하면 몸이 조금은 회복하는 데 도움이 될 수 있습니다.
@@ -256,7 +407,6 @@ async def private_advice(report: str, summary: str, info: dict):
             result = response.json()
             
         advice = result["choices"][0]["message"]["content"].strip()
-        client.close()
         return advice
 
     except Exception as e:
@@ -318,9 +468,8 @@ async def daily_advice(text: str):
             response = await cli.post(ADVICE_URL, headers=headers, json=payload)
             response.raise_for_status()
             result = response.json()
-
+            
         advice = result["choices"][0]["message"]["content"].strip()
-        client.close()
         return advice
 
     except Exception as e:

@@ -116,7 +116,7 @@ async def group_advice(input_data: ManageAdviceInput):
                 best_advice = advice
 
             # 기준 통과하면 즉시 종료
-            if final_score >= 0.7:
+            if final_score >= 0.85:
                 break
 
         # 3) 최종 조언 결정 및 임베딩
@@ -128,7 +128,7 @@ async def group_advice(input_data: ManageAdviceInput):
         "output": advice,
         }
 
-        if best_score >= 0.7:
+        if best_score >= 0.85:
             embedding_advice = embed(total_summary)
             client = get_client()
             try:
@@ -189,7 +189,7 @@ async def personal_advice(data: PersonalAdviceInput):
                 best_score = final_score
                 best_advice = advice
 
-            if final_score >= 0.7:
+            if final_score >= 0.85:
                 break
 
         advice = best_advice
@@ -199,7 +199,7 @@ async def personal_advice(data: PersonalAdviceInput):
         "input": total_summary,
         "output": advice,
         }
-        if best_score >= 0.7:
+        if best_score >= 0.85:
             embedding_advice = embed(total_summary)
             client = get_client()
             try:

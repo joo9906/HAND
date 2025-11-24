@@ -1,20 +1,23 @@
 from transformers import (
     AutoTokenizer,
-    AutoModelForSequenceClassification,
 )
 import torch
 import os
+import onnxruntime as ort
 
-print("[MODEL LOADER] 모델 로드 중...")
+print("[ONNX MODEL LOADER] 모델 로드 중...")
 
-model_path = os.path.join(os.path.dirname(__file__), "Classifier_Model")
+onnx_model_path = os.path.join(os.path.dirname(__file__), "onnx", "model.onnx")
+tokenizer_path = os.path.join(os.path.dirname(__file__), "Classifier_Model")
 Device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = AutoModelForSequenceClassification.from_pretrained(model_path).to(Device)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
-model.eval()
+session = ort.InferenceSession(
+    onnx_model_path,
+    providers=["CPUExecutionProvider"]
+)
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
-if model:
+if session:
     print(f"모델 로드 완료")
 else:
     print(f"모델 로드 실패")

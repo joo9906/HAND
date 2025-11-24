@@ -3,6 +3,10 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# 올라가면 깃허브 용량 터지는 파일들
+model.onnx
+model.safetensors
+
 # C extensions
 *.so
 
