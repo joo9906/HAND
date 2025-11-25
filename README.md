@@ -27,6 +27,10 @@ HAND Project – Emotion & Stress Early Detection AI Server
 
 - 전처리: URL 제거, 이모지 제거, 텍스트 정규화 등
 
+- 최적화 및 경량화
+    - 기존 FP32 모델을 FP 16으로 변환(모델 크기 511MB -> 213MB로 감소)
+    - CPU 추론 최적화를 위해 ONNX 변환 (20토큰 기준 추론 속도 0.03초 -> 0.015초)
+
 ## 2. ✏️ AI 기반 텍스트 요약
 
 다이어리 텍스트를 두 형태로 요약해 제공합니다.
