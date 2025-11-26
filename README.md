@@ -9,8 +9,9 @@ HAND Project – Emotion & Stress Early Detection AI Server
 ### 실제 사용 영상
 
 <div style="display: flex; justify-content: center; gap: 40px;">
-  <img src="./example/개인보고서기능.mp4" width="30%"; margin-right="50px">
-  <img src="./example/관리자기능.mp4" width="30%"; margin-right = "50px">
+  <img src="./example/개인보고서기능.gif" width="30%"; margin-right="50px">
+  <img src="./example/다이어리%20작성.gif" width="30%"; margin-right = "50px">
+  <img src="./example/관리자%20기능.gif" width="30%"; margin-right = "50px">
 </div> 
 
 # 핵심 기능 정리
